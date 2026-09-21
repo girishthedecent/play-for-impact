@@ -11,6 +11,8 @@ interface ServerConfig {
   stripeSecretKey: string;
   stripeWebhookSecret: string;
   frontendUrl: string;
+  supabaseUrl: string;
+  supabaseServiceKey: string;
 }
 
 export const serverConfig: ServerConfig = {
@@ -22,4 +24,6 @@ export const serverConfig: ServerConfig = {
   stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+  supabaseUrl: process.env.SUPABASE_URL || 'https://deozafdqjatqizngrzwt.supabase.co',
+  supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
 };

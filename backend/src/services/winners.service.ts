@@ -6,6 +6,7 @@ import {
 } from '../repositories';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors/app.error';
 import logger from '../config/logger.config';
+import { storageService } from './storage.service';
 
 export class WinnersService {
   async getUserWinnings(userId: string): Promise<WinnerDetail[]> {
@@ -50,7 +51,7 @@ export class WinnersService {
     const existingProof = await winnerRepository.getProofByDrawEntryId(entryId);
     if (existingProof) throw new BadRequestError('Proof already uploaded');
 
-    const imageUrl = `/uploads/winner-proofs/${file.filename}`;
+    const imageUrl = await storageService.uploadWinnerProof(file);
     const imageType = file.mimetype === 'image/png' ? 'png' : 'jpeg';
 
     const proof = await winnerRepository.createProof({

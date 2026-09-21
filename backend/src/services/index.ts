@@ -6,3 +6,4 @@ export * from './charities.service';
 export * from './draws.service';
 export * from './winners.service';
 export * from './admin.service';
+export * from './storage.service';

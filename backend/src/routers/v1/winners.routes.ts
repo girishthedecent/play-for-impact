@@ -14,19 +14,8 @@ import {
 import { validateUUIDParam } from '../../validators/index';
 import { authMiddleware, adminMiddleware } from '../../middlewares/auth.middleware';
 
-const uploadDir = path.resolve(__dirname, '../../../uploads/winner-proofs');
-fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: uploadDir,
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
-    cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
-  },
-});
-
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     const allowed = ['image/jpeg', 'image/png'];
