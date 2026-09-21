@@ -45,15 +45,16 @@ Play for Impact is a full-stack golf subscription platform that combines **golf 
                        └───────┬─────────────────────────────────┬───────┘
                                │                                 │
            ┌───────────────────┴──────────┐       ┌──────────────┴──────────────────┐
-           │     Routers & Controllers    │       │     Static Assets & Uploads     │
-           │  JWT Auth • Zod Validators   │       │  Multer (JPEG/PNG, 5MB Limit)   │
-           └───────────────┬──────────────┘       │  /uploads/winner-proofs         │
+           │     Routers & Controllers    │       │     Cloud Object Storage        │
+           │  JWT Auth • Zod Validators   │       │  Supabase Storage (winner-proofs│
+           └───────────────┬──────────────┘       │  via @supabase/supabase-js)     │
                            │                      └─────────────────────────────────┘
            ┌───────────────┴──────────────┐
            │        Service Layer         │
            │  Draw Engine • Prize Pools   │
            │  Rolling 5 Score Eviction    │
            │  Stripe Mock / Live Service  │
+           │  Supabase Storage Service    │
            └───────────────┬──────────────┘
                            │
            ┌───────────────┴──────────────┐
@@ -73,6 +74,7 @@ Play for Impact is a full-stack golf subscription platform that combines **golf 
 - **Separation of Concerns:** `Routers -> Controllers -> Services -> Repositories -> Database`.
 - **Database Transactions:** Multi-entity operations (draw publishing, subscription cancellation, rolling score limits) use atomic PostgreSQL transactions (`BEGIN ... COMMIT / ROLLBACK`) with injected `PoolClient` instances.
 - **Strict Typing:** End-to-end TypeScript with zero `any` types. Backend query outputs map through typed database row interfaces, and API responses strictly follow a standardized envelope.
+- **Cloud Native Storage:** Scorecard verification proofs stream into Supabase Storage with direct public CDN delivery, eliminating server disk persistence issues.
 - **Anti-AI-Slop UX:** Designed with custom typography (`DM Serif Display` + `DM Sans`), high-contrast dark forest greens (`#047857`) and gold accents (`#D97706`), accessible skeletons, and clean bento-style cards.
 
 ---
@@ -90,9 +92,10 @@ Play for Impact is a full-stack golf subscription platform that combines **golf 
 ### Backend
 - **Runtime & Server:** Node.js 20+ / Express 5 + TypeScript
 - **Database Driver:** `pg` (node-postgres) with connection pooling
+- **Cloud Storage:** Supabase Storage (`@supabase/supabase-js`)
 - **Security & Headers:** Helmet (custom CSP + CORP `cross-origin`), CORS, Compression
 - **Authentication:** JWT (`jsonwebtoken`) + Password Hashing (`bcryptjs`)
-- **File Uploads:** Multer (strict MIME-type whitelist, sanitized filenames, 5MB max)
+- **File Uploads:** Multer in-memory streaming (strict MIME whitelist, 5MB max)
 - **Validation:** Zod schemas on all request payloads
 - **Logging:** Winston + Winston Daily Rotate File (structured JSON + correlation IDs)
 - **Testing:** Jest + Supertest + ts-jest
@@ -102,7 +105,7 @@ Play for Impact is a full-stack golf subscription platform that combines **golf 
 ## Repository Structure
 
 ```
-digital-heroes/
+play-for-impact/
 ├── backend/
 │   ├── migrations/                  # 8 SQL migration files
 │   │   ├── 001_create_users.sql
@@ -181,6 +184,10 @@ FRONTEND_URL=http://localhost:5173
 # Stripe Payment Processing (Leave empty for instant Mock Mode)
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
+
+# Supabase Storage (Winner Proofs Bucket)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-secret-key
 ```
 
 ### 2. Frontend Configuration (`frontend/.env`)
@@ -357,8 +364,8 @@ Before taking this application live in production, ensure the following steps ar
   - Verify Helmet `Cross-Origin-Resource-Policy` is set to `{ policy: 'cross-origin' }` so image proofs load reliably across domains.
 - [ ] **Change Default Admin Password**:
   - Immediately update the password for seeded admin account `admin@golfdraw.com` via the database or password reset utility.
-- [ ] **Persistent Upload Storage**:
-  - Local disk storage (`uploads/winner-proofs`) is ephemeral on cloud PaaS hosts (Render, Heroku, Railway). Ensure a persistent disk is mounted at the upload directory or integrate an S3-compatible cloud object store (AWS S3, Cloudflare R2, Supabase Storage).
+- [x] **Supabase Storage Bucket**:
+  - `winner-proofs` bucket configured with public read access; images stream directly to Supabase CDN without local server disk dependency.
 - [ ] **Database Connection Pooling**:
   - For serverless or high-concurrency environments, connect via Supabase Transaction Pooler (`port 6543`) with `pg` pool settings tuned (`max: 20`, `idleTimeoutMillis: 30000`).
 - [ ] **Enable Live Stripe Keys**:
