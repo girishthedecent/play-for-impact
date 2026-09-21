@@ -91,13 +91,13 @@ app.use('/api/v1', v1Router);
 app.use(appErrorHandler);
 app.use(genericErrorHandler);
 
-// Start server (only in non-serverless long-running process)
-if (!process.env.VERCEL) {
-  app.listen(serverConfig.port, () => {
-    console.log(`Server running on port ${serverConfig.port}`);
-    console.log(`Environment: ${serverConfig.nodeEnv}`);
-    startSubscriptionExpiryJob();
-  });
-}
+// Start server
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : serverConfig.port;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${serverConfig.nodeEnv}`);
+  startSubscriptionExpiryJob();
+});
 
 export default app;
