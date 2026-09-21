@@ -296,87 +296,54 @@ npm test
 
 ## Production Deployment Guide
 
-### Option 1: Docker Deployment (Recommended)
+### Option 1: Managed Cloud Platforms (Vercel + Render / Railway)
 
-#### Backend `Dockerfile`
-```dockerfile
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
+#### 1. Backend (Render / Railway / Fly.io)
+- **Runtime:** Node.js 20+
+- **Root Directory:** `backend`
+- **Build Command:** `npm ci && npm run build`
+- **Start Command:** `npm start` *(runs `node dist/server.js`)*
+- **Run Migrations:** `npm run migrate:prod`
+- **Environment Variables:**
+  - `NODE_ENV=production`
+  - `PORT=3001` (or provider's default port)
+  - `DATABASE_URL` (PostgreSQL connection string)
+  - `JWT_SECRET` (secure 64-character random key)
+  - `FRONTEND_URL` (your frontend domain, e.g. `https://your-app.vercel.app`)
 
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-COPY package*.json ./
-RUN npm ci --omit=dev
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/migrations ./migrations
-RUN mkdir -p uploads/winner-proofs logs
-EXPOSE 3001
-CMD ["node", "dist/server.js"]
-```
-
-#### Frontend `Dockerfile` (Nginx)
-```dockerfile
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-#### Frontend Nginx SPA Configuration (`nginx.conf`)
-```nginx
-server {
-    listen 80;
-    server_name _;
-
-    root /usr/share/nginx/html;
-    index index.html;
-
-    # Gzip Compression
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
-
-    # Client-side routing fallback
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Static asset caching
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
-        expires 1y;
-        add_header Cache-Control "public, no-transform";
-    }
-}
-```
+#### 2. Frontend (Vercel / Netlify / Cloudflare Pages)
+- **Framework:** Vite
+- **Root Directory:** `frontend`
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+- **Environment Variables:**
+  - `VITE_API_BASE_URL` (your backend API URL, e.g. `https://your-backend.onrender.com/api/v1`)
+- **SPA Routing:** Single-page application fallback rule (`/* -> /index.html 200`).
 
 ---
 
-### Option 2: Cloud PaaS (Render / Railway / Fly.io / AWS ECS)
+### Option 2: Linux Server / VPS (Ubuntu, EC2, DigitalOcean)
 
-1. **Deploy PostgreSQL**:
-   - Create a production PostgreSQL database on Supabase, AWS RDS, or Neon.
-   - Run migrations from CI/CD or deployment runner: `npm run migrate`.
-2. **Deploy Backend**:
-   - Build Command: `npm ci && npm run build`
-   - Start Command: `node dist/server.js`
-   - Set all production environment variables (see checklist below).
-   - **Persistent Volume:** Attach a persistent volume at `/app/uploads` to store scorecard proof images, or route uploads to an S3/Cloudflare R2 bucket.
-3. **Deploy Frontend**:
-   - Build Command: `npm ci && npm run build`
-   - Publish Directory: `dist`
-   - Configure single-page application redirect rule: `/* -> /index.html 200`.
+#### 1. Backend Process Management (PM2)
+```bash
+cd backend
+npm ci
+npm run build
+npm run migrate:prod
+
+# Start application process with auto-restart
+pm2 start dist/server.js --name "play-for-impact-api"
+pm2 save
+pm2 startup
+```
+
+#### 2. Frontend Build & Static Serving
+```bash
+cd frontend
+npm ci
+npm run build
+# The production assets in frontend/dist/ can be served via Nginx, Caddy, or Apache.
+```
 
 ---
 
@@ -391,7 +358,7 @@ Before taking this application live in production, ensure the following steps ar
 - [ ] **Change Default Admin Password**:
   - Immediately update the password for seeded admin account `admin@golfdraw.com` via the database or password reset utility.
 - [ ] **Persistent Upload Storage**:
-  - Local disk storage (`uploads/winner-proofs`) is ephemeral on containerized hosts (Render, Heroku, Railway). Ensure a persistent volume is mounted at the upload directory or integrate an S3-compatible cloud object store (AWS S3, Cloudflare R2, Supabase Storage).
+  - Local disk storage (`uploads/winner-proofs`) is ephemeral on cloud PaaS hosts (Render, Heroku, Railway). Ensure a persistent disk is mounted at the upload directory or integrate an S3-compatible cloud object store (AWS S3, Cloudflare R2, Supabase Storage).
 - [ ] **Database Connection Pooling**:
   - For serverless or high-concurrency environments, connect via Supabase Transaction Pooler (`port 6543`) with `pg` pool settings tuned (`max: 20`, `idleTimeoutMillis: 30000`).
 - [ ] **Enable Live Stripe Keys**:
