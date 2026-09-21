@@ -13,9 +13,13 @@ import { startSubscriptionExpiryJob } from './utils/subscription-expiry';
 
 const app = express();
 
-// Ensure upload directories exist
+// Ensure upload directories exist (with fallback for read-only serverless filesystems)
 const uploadsDir = path.resolve(__dirname, '../uploads');
-fs.mkdirSync(path.join(uploadsDir, 'winner-proofs'), { recursive: true });
+try {
+  fs.mkdirSync(path.join(uploadsDir, 'winner-proofs'), { recursive: true });
+} catch {
+  // Read-only filesystem in serverless functions (handled by Supabase Storage)
+}
 
 // Security middleware
 app.use(helmet({
@@ -32,7 +36,17 @@ app.use(helmet({
   crossOriginOpenerPolicy: false,
 }));
 app.use(cors({
-  origin: serverConfig.frontendUrl,
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      origin === serverConfig.frontendUrl ||
+      origin === 'http://localhost:5173' ||
+      origin.endsWith('.vercel.app')
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
 }));
 
@@ -77,11 +91,13 @@ app.use('/api/v1', v1Router);
 app.use(appErrorHandler);
 app.use(genericErrorHandler);
 
-// Start server
-app.listen(serverConfig.port, () => {
-  console.log(`Server running on port ${serverConfig.port}`);
-  console.log(`Environment: ${serverConfig.nodeEnv}`);
-  startSubscriptionExpiryJob();
-});
+// Start server (only in non-serverless long-running process)
+if (!process.env.VERCEL) {
+  app.listen(serverConfig.port, () => {
+    console.log(`Server running on port ${serverConfig.port}`);
+    console.log(`Environment: ${serverConfig.nodeEnv}`);
+    startSubscriptionExpiryJob();
+  });
+}
 
 export default app;
