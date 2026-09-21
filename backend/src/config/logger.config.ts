@@ -15,6 +15,26 @@ const customPrintf = winston.format.printf(({ level, message, timestamp, stack }
   return `${timestamp} [${level}] [${correlationId}] ${logMessage}`;
 });
 
+const transports: winston.transport[] = [
+  new winston.transports.Console({
+    format: winston.format.combine(
+      winston.format.colorize(),
+      customPrintf
+    ),
+  }),
+];
+
+if (!process.env.VERCEL) {
+  transports.push(
+    new DailyRotateFile({
+      filename: 'logs/%DATE%-app.log',
+      datePattern: 'YYYY-MM-DD',
+      maxSize: '20m',
+      maxFiles: '14d',
+    })
+  );
+}
+
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   format: winston.format.combine(
@@ -22,20 +42,7 @@ const logger = winston.createLogger({
     winston.format.errors({ stack: true }),
     customPrintf
   ),
-  transports: [
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        customPrintf
-      ),
-    }),
-    new DailyRotateFile({
-      filename: 'logs/%DATE%-app.log',
-      datePattern: 'YYYY-MM-DD',
-      maxSize: '20m',
-      maxFiles: '14d',
-    }),
-  ],
+  transports,
 });
 
 export default logger;

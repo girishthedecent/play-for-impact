@@ -79,25 +79,30 @@ app.use(
 // Correlation ID
 app.use(correlationMiddleware);
 
-// Health check
+// Health checks
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
-// API routes
+// API routes (support both with and without /api prefix for proxy resilience)
 app.use('/api/v1', v1Router);
+app.use('/v1', v1Router);
 
 // Error handlers (must be after routes)
 app.use(appErrorHandler);
 app.use(genericErrorHandler);
 
-// Start server
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : serverConfig.port;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${serverConfig.nodeEnv}`);
-  startSubscriptionExpiryJob();
-});
+// Start server (only in long-running container or VM, not inside Vercel serverless functions)
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : serverConfig.port;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${serverConfig.nodeEnv}`);
+    startSubscriptionExpiryJob();
+  });
+}
 
 export default app;
