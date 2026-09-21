@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+  </defs>
+  <!-- Background with smooth rounded squircle -->
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+  
+  <!-- Golf green base curve -->
+  <path d="M3 23 C11 21, 21 25, 29 23 L29 25 C29 26.66 27.66 28 26 28 L6 28 C4.34 28 3 26.66 3 25 Z" fill="#064E3B" opacity="0.35"/>
+  
+  <!-- Flag pole -->
+  <line x1="13.5" y1="6.5" x2="13.5" y2="23.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+  
+  <!-- Flag (warm gold) -->
+  <path d="M13.5 7.5 L22.5 11.5 L13.5 15.5 Z" fill="url(#gold)"/>
+  
+  <!-- Hole cup -->
+  <ellipse cx="13.5" cy="23.5" rx="3.2" ry="1.2" fill="#064E3B"/>
+  
+  <!-- Golf ball -->
+  <circle cx="20.5" cy="22.5" r="2.8" fill="#FFFFFF"/>
+  <circle cx="20.1" cy="22.1" r="0.5" fill="#E2E8F0"/>
+  <circle cx="21.3" cy="22.7" r="0.45" fill="#E2E8F0"/>
+  <circle cx="19.8" cy="23.1" r="0.4" fill="#CBD5E1"/>
+</svg>

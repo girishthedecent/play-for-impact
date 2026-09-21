@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+logs/
+coverage/
+uploads/*
+!uploads/.gitkeep
+!uploads/winner-proofs/.gitkeep
