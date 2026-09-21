@@ -10,6 +10,11 @@
 
 Play for Impact is a full-stack golf subscription platform that combines **golf scoring**, **charity contributions**, **monthly sweepstakes draws**, and **prize distribution**. Golfers track their Stableford rounds, allocate a percentage of their subscription to vetted charities, and automatically enter monthly prize draws funded by platform subscription revenue.
 
+> ⛳ **Live Production URL:** [https://play-for-impact.vercel.app](https://play-for-impact.vercel.app)  
+> 📡 **API Base URL:** `https://play-for-impact.vercel.app/api/v1`  
+> 🩺 **System Health Check:** [https://play-for-impact.vercel.app/api/health](https://play-for-impact.vercel.app/api/health)  
+> 🔑 **Demo Administrator:** `admin@golfdraw.com` / `admin123`
+
 ---
 
 ## Table of Contents
@@ -303,29 +308,27 @@ npm test
 
 ## Production Deployment Guide
 
-### Option 1: Managed Cloud Platforms (Vercel + Render / Railway)
+### Option 1: Vercel Multi-Services (Current Production Setup)
 
-#### 1. Backend (Render / Railway / Fly.io)
-- **Runtime:** Node.js 20+
-- **Root Directory:** `backend`
-- **Build Command:** `npm ci && npm run build`
-- **Start Command:** `npm start` *(runs `node dist/server.js`)*
-- **Run Migrations:** `npm run migrate:prod`
-- **Environment Variables:**
-  - `NODE_ENV=production`
-  - `PORT=3001` (or provider's default port)
-  - `DATABASE_URL` (PostgreSQL connection string)
-  - `JWT_SECRET` (secure 64-character random key)
-  - `FRONTEND_URL` (your frontend domain, e.g. `https://your-app.vercel.app`)
+The platform is deployed as a **Vercel Multi-Service monorepo**, unifying both the Vite SPA and Express API under a single origin (`https://play-for-impact.vercel.app`):
 
-#### 2. Frontend (Vercel / Netlify / Cloudflare Pages)
-- **Framework:** Vite
-- **Root Directory:** `frontend`
-- **Build Command:** `npm run build`
-- **Output Directory:** `dist`
-- **Environment Variables:**
-  - `VITE_API_BASE_URL` (your backend API URL, e.g. `https://your-backend.onrender.com/api/v1`)
-- **SPA Routing:** Single-page application fallback rule (`/* -> /index.html 200`).
+- **Orchestrator:** Root [`vercel.json`](vercel.json) routes `/api(/.*)?` to the backend and all other paths to the frontend.
+- **Root Directory:** `./`
+- **Frontend Service:** Vite React SPA with client-side SPA fallback.
+- **Backend Service:** Node.js Express serverless service (`entrypoint: src/server.ts`).
+- **Zero CORS:** Both tiers share the same host domain, eliminating cross-origin preflight requests and CORS errors.
+
+#### Environment Variables Configured in Vercel:
+```bash
+DATABASE_URL=postgresql://...aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+JWT_SECRET=play-for-impact-jwt-secret-key-2026
+JWT_EXPIRES_IN=7d
+SUPABASE_URL=https://deozafdqjatqizngrzwt.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+STRIPE_SECRET_KEY=sk_test_...
+NODE_ENV=production
+VITE_API_BASE_URL=/api/v1
+```
 
 ---
 
